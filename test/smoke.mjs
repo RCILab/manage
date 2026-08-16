@@ -115,7 +115,15 @@ class Q {
     return { data: null, error: { message: 'unknown mode' } };
   }
 }
-const fake = { from: (t) => new Q(t), auth: { signOut: async () => ({}), signInWithOAuth: async () => ({ data: {}, error: null }) } };
+const authCalls = [];
+const fake = { from: (t) => new Q(t), auth: {
+  signOut: async () => ({}),
+  signInWithOAuth: async () => ({ data: {}, error: null }),
+  signInWithPassword: async (p) => { authCalls.push(['pw', p]); return p.password === 'secret123' ? { data: { session: {} }, error: null } : { data: null, error: { message: 'Invalid login credentials' } }; },
+  updateUser: async (p) => { authCalls.push(['update', p]); return { data: {}, error: null }; },
+  getSession: async () => ({ data: { session: null }, error: null }),
+  onAuthStateChange: () => ({ data: { subscription: { unsubscribe() {} } } }),
+} };
 
 // ---------- 앱 모듈 로드 ----------
 const sb = await import('../app/supabase.js');
@@ -129,6 +137,7 @@ const { ProjectYearPage } = await import('../app/pages/project_year.js');
 const { AllocationsPage } = await import('../app/pages/allocations.js');
 const { MembersPage } = await import('../app/pages/members.js');
 const { LoginPage } = await import('../app/pages/login.js');
+const { AccountPage } = await import('../app/pages/account.js');
 const util = await import('../app/util.js');
 
 const me = db.members[0];
@@ -278,22 +287,48 @@ console.log('MembersPage');
   await unmount(root);
 }
 
-// 로그인 화면
+// 로그인 화면 (이메일/비밀번호)
 console.log('LoginPage');
 {
   const root = mount(html`<${LoginPage} />`);
   await settle();
-  ok(text(root).includes('Google 계정으로 로그인'), '로그인 버튼');
+  ok(root.querySelector('input[type=email]') && root.querySelector('input[type=password]'), '이메일/비밀번호 입력');
+  ok(!text(root).includes('Google 계정으로 로그인'), 'Google 미설정 시 버튼 숨김');
+  const em = root.querySelector('input[type=email]'); em.value = 'KIM87@khu.ac.kr'; em.dispatchEvent(new win.Event('input'));
+  const pw = root.querySelector('input[type=password]'); pw.value = 'wrong'; pw.dispatchEvent(new win.Event('input'));
+  await wait(5);
+  root.querySelector('form.login-form').dispatchEvent(new win.Event('submit'));
+  await settle();
+  ok(text(root).includes('이메일 또는 비밀번호가 올바르지 않습니다'), '잘못된 비밀번호 안내');
+  ok(authCalls.some((c) => c[0] === 'pw' && c[1].email === 'kim87@khu.ac.kr'), '이메일 소문자 정규화 후 로그인 시도');
   await unmount(root);
 }
 
-// main.js 부팅 (설정 없음 → 안내 화면)
+// 내 계정 (비밀번호 변경)
+console.log('AccountPage');
+{
+  const root = mount(html`<${AccountPage} me=${stu} session=${{ user: { email: 'psh@khu.ac.kr' } }} />`);
+  await settle();
+  ok(text(root).includes('psh@khu.ac.kr') && text(root).includes('박수환'), '계정 정보');
+  const [p1, p2] = root.querySelectorAll('input[type=password]');
+  p1.value = 'newpass123'; p1.dispatchEvent(new win.Event('input'));
+  p2.value = 'newpass123'; p2.dispatchEvent(new win.Event('input'));
+  await wait(5);
+  root.querySelector('form').dispatchEvent(new win.Event('submit'));
+  await settle();
+  ok(authCalls.some((c) => c[0] === 'update' && c[1].password === 'newpass123'), '비밀번호 변경 호출');
+  await unmount(root);
+}
+
+// main.js 부팅 (설정 있음 + 세션 없음 → 로그인 화면 / 설정 없음 → 안내 화면)
 console.log('main.js');
 {
   const app = document.createElement('div'); app.id = 'app'; document.body.appendChild(app);
   await import('../app/main.js');
   await settle();
-  ok(app.textContent.includes('Supabase 설정이 없습니다'), '미설정 안내 화면');
+  const cfg = await import('../app/config.js');
+  if (cfg.SUPABASE_URL) ok(app.querySelector('form.login-form'), '로그인 화면 부팅');
+  else ok(app.textContent.includes('Supabase 설정이 없습니다'), '미설정 안내 화면');
 }
 
 console.log(`\n모두 통과 (${pass} 검사)`);

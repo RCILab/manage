@@ -13,6 +13,7 @@ import { ProjectsPage } from './pages/projects.js';
 import { ProjectYearPage } from './pages/project_year.js';
 import { AllocationsPage } from './pages/allocations.js';
 import { MembersPage } from './pages/members.js';
+import { AccountPage } from './pages/account.js';
 
 const MANAGER_LINKS = [
   ['/dashboard', '대시보드'],
@@ -20,8 +21,9 @@ const MANAGER_LINKS = [
   ['/allocations', '인건비 배분'],
   ['/members', '구성원'],
   ['/me', '내 인건비'],
+  ['/account', '내 계정'],
 ];
-const STUDENT_LINKS = [['/me', '내 인건비']];
+const STUDENT_LINKS = [['/me', '내 인건비'], ['/account', '내 계정']];
 
 function Nav({ me, session, path }) {
   const links = me && (me.role === 'admin' || me.role === 'pi') ? MANAGER_LINKS : STUDENT_LINKS;
@@ -43,7 +45,7 @@ function SetupPage() {
     <ol>
       <li>Supabase 프로젝트를 만들고 <code>supabase/schema.sql</code> 을 SQL Editor 에서 실행합니다.</li>
       <li>Project Settings → API 의 <b>Project URL</b>, <b>anon public</b> 키를 <code>app/config.js</code> 에 넣습니다.</li>
-      <li>Authentication → Providers 에서 Google 을 켜고, URL Configuration 의 Redirect URLs 에 이 페이지 주소를 추가합니다.</li>
+      <li>Authentication → URL Configuration 의 Site URL / Redirect URLs 에 이 페이지 주소를 넣고, 구성원 계정을 만듭니다 (scripts/create_users.py).</li>
     </ol>
     <p class="muted">자세한 절차는 저장소의 README.md 를 참고하세요.</p>
   </div>`;
@@ -96,6 +98,8 @@ function App() {
     page = null;
   } else if (path.startsWith('/me')) {
     page = html`<${StudentPage} me=${me} />`;
+  } else if (path.startsWith('/account')) {
+    page = html`<${AccountPage} me=${me} session=${session} />`;
   } else if (!isManager) {
     navigate('/me');
     page = null;

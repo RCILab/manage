@@ -21,12 +21,22 @@ export async function signInWithGoogle(domainHint) {
     },
   }));
 }
-export async function signInWithMagicLink(email) {
-  const emailRedirectTo = location.origin + location.pathname;
-  return unwrap(await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo, shouldCreateUser: true } }));
+export async function signInWithPassword(email, password) {
+  return unwrap(await supabase.auth.signInWithPassword({ email: String(email).trim().toLowerCase(), password }));
+}
+export async function updatePassword(password) {
+  return unwrap(await supabase.auth.updateUser({ password }));
 }
 export async function signOut() {
   await supabase.auth.signOut();
+}
+/** 공개 인증 설정 (어떤 로그인 방식이 켜져 있는지).  실패하면 null */
+export async function getAuthSettings(url, anonKey) {
+  if (!url || !anonKey) return null;
+  try {
+    const r = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: anonKey } });
+    return r.ok ? await r.json() : null;
+  } catch { return null; }
 }
 
 // ---------- 구성원 ----------

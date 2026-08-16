@@ -22,21 +22,27 @@
    `app/config.js` 의 `SUPABASE_URL`, `SUPABASE_ANON_KEY` 에 넣고 커밋/푸시합니다.
    (anon 키는 공개용입니다. 실제 접근 제어는 RLS가 합니다.)
 
-### 1-2. 로그인 (Google, khu.ac.kr)
+### 1-2. 로그인 (이메일 + 비밀번호, 관리자가 계정 발급)
+학생 스스로 가입하는 방식이 아니라, **관리자가 지정한 이메일로 계정을 만들어 주고** 그 이메일/비밀번호로 로그인합니다.
+
 1. **Supabase → Authentication → URL Configuration**
    - Site URL: `https://rcilab.github.io/manage/`
-   - Redirect URLs 에 추가: `https://rcilab.github.io/manage/*` (로컬 테스트도 하려면 `http://localhost:8000/*`)
-2. **Google Cloud Console** (kim87@khu.ac.kr 계정으로) → 프로젝트 하나 만들기
-   - APIs & Services → **OAuth consent screen** → User type **Internal** (경희대 Workspace 계정만 로그인 가능) → 앱 이름/이메일 입력 → 저장
-     (Internal 선택이 안 되면 External 로 두어도 됩니다. DB 트리거가 khu.ac.kr 외 계정 가입을 막습니다.)
-   - Credentials → Create credentials → **OAuth client ID** → Web application
-     - Authorized JavaScript origins: `https://<프로젝트ref>.supabase.co`
-     - Authorized redirect URIs: `https://<프로젝트ref>.supabase.co/auth/v1/callback`
-       (정확한 값은 Supabase → Authentication → Providers → Google 화면에 표시됨)
-   - Client ID / Client secret 복사
-3. **Supabase → Authentication → Providers → Google** 켜고 Client ID / Secret 붙여넣기 → Save.
+   - Redirect URLs 에 추가: `https://rcilab.github.io/manage/*`
+2. **Supabase → Authentication → Sign In / Providers** → *Allow new users to sign up* **OFF** (아무나 가입 못 하게)
+3. 첫 관리자 계정: **Authentication → Users → Add user → Create new user** → 이메일 `kim87@khu.ac.kr`, 비밀번호 입력, *Auto Confirm User* 체크 → 생성.
+   이 이메일은 schema.sql 8번에서 members(pi) 로 이미 등록되어 있으므로 바로 로그인됩니다.
+4. 학생 계정: 웹앱 **구성원** 화면에서 학생 이메일을 채운 뒤, 아래 스크립트로 한 번에 생성 (또는 위 3번처럼 대시보드에서 한 명씩)
+   ```bash
+   # Project Settings → API → service_role (secret) 키가 필요. 이 키는 절대 git/브라우저에 넣지 말 것.
+   set SUPABASE_URL=https://xxxx.supabase.co
+   set SUPABASE_SERVICE_ROLE_KEY=...
+   python scripts/create_users.py --list                       # 현황
+   python scripts/create_users.py --create-missing --out local/accounts.csv   # 이메일 있는 활성 구성원 계정 생성 + 초기 비밀번호 발급
+   python scripts/create_users.py --reset 이름@khu.ac.kr        # 비밀번호 초기화
+   ```
+   발급된 초기 비밀번호를 본인에게 전달하면, 로그인 후 **내 계정** 화면에서 바꿀 수 있습니다.
 
-이메일 매직링크 로그인도 로그인 화면에 있지만, Supabase 기본 메일 발송은 시간당 몇 통으로 제한되므로 보조 수단으로만 쓰세요.
+(선택) Google 로그인도 지원합니다. Supabase Providers 에서 Google 을 켜면 로그인 화면에 버튼이 자동으로 나타납니다 — Google Cloud Console 의 OAuth 클라이언트(리디렉션 URI `https://<ref>.supabase.co/auth/v1/callback`)가 필요합니다.
 
 ### 1-3. 초기 데이터 넣기 (구글 시트 → DB)
 ```bash
@@ -62,6 +68,7 @@ python scripts/import_xlsx.py "연구비 소요 내역 (2026).xlsx" --year 2026 
 | 경로 | 대상 | 내용 |
 |---|---|---|
 | `#/me` | 모두 | 내 인건비: 월 × 과제 표, 기준 대비 차이, 과제별 연간 합계 |
+| `#/account` | 모두 | 내 계정: 비밀번호 변경 |
 | `#/dashboard` | 관리자 | 과제·연차별 계획/이월/집행/잔액/사용율, 과제별 학생인건비 배분 합계 |
 | `#/projects` | 관리자 | 과제 목록/추가, 연차 추가 → 연차 클릭 |
 | `#/projects/<연차id>` | 관리자 | 연차 정보(기간·계획), 비목별 예산(계획/이월 편집, 사용/잔액 자동), 집행 원장 입력·수정·삭제 |
@@ -89,6 +96,7 @@ app/
   pages/              login, student, dashboard, projects, project_year, allocations, members
 supabase/schema.sql   테이블, 뷰, RLS, 가입 제한 트리거, 기본 비목
 scripts/import_xlsx.py  구글 시트(xlsx) → seed.sql
+scripts/create_users.py 구성원 로그인 계정 생성 / 비밀번호 초기화 (service_role 키 필요, 로컬 전용)
 test/smoke.mjs        헤드리스 스모크 테스트 (happy-dom + 가짜 supabase)
 ```
 
@@ -114,7 +122,7 @@ node test/smoke.mjs
 | allocations, salary_targets | 자기 것 조회 | 전부 읽기/쓰기 |
 
 - 로그인 이메일이 `members.email` 과 일치해야 하며(대소문자 무시), 명단에 없으면 "등록되지 않은 계정" 화면만 보입니다.
-- `auth.users` 트리거가 `@khu.ac.kr` 이 아니고 명단에도 없는 이메일의 계정 생성을 막습니다. 해제: `drop trigger if exists check_signup_email on auth.users;`
+- 가입은 꺼 두고(1-2 의 2번) 관리자가 계정을 만들어 줍니다. 추가로 `auth.users` 트리거가 `@khu.ac.kr` 이 아니고 명단에도 없는 이메일의 계정 생성을 막습니다. 해제: `drop trigger if exists check_signup_email on auth.users;`
 - 관리자를 추가하려면 구성원 화면에서 역할을 `행정조교` 또는 `교수` 로 바꾸면 됩니다.
 
 ## 5. 주의
