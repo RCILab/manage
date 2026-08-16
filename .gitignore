@@ -1,0 +1,15 @@
+# 개인정보/원본 데이터 — 절대 커밋하지 않음
+local/
+*.xlsx
+*.xls
+*.csv
+seed*.sql
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# 로컬 테스트
+node_modules/
