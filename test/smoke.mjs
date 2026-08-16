@@ -294,7 +294,7 @@ console.log('MembersPage');
   const modal = root.querySelector('.modal');
   ok(modal && modal.textContent.includes('구성원 추가'), '추가 모달 열림');
   const setVal = (sel, v) => { const el = modal.querySelector(sel); el.value = v; el.dispatchEvent(new win.Event(el.tagName === 'SELECT' ? 'change' : 'input')); };
-  const empChk = [...modal.querySelectorAll('label.check')].find((l) => l.textContent.includes('직장가입자')).querySelector('input');
+  const empChk = [...modal.querySelectorAll('label.check')].find((l) => l.textContent.includes('직장')).querySelector('input');
   empChk.checked = true; empChk.dispatchEvent(new win.Event('change'));
   const labels = [...modal.querySelectorAll('label')];
   const inputOf = (labelText) => labels.find((l) => l.textContent.trim().startsWith(labelText)).querySelector('input,select');

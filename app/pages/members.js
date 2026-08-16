@@ -85,7 +85,7 @@ export function MembersPage({ me }) {
     setEditing({ ...EMPTY, sort_order: maxOrder + 1 });
   };
   const csv = () => {
-    const head = ['이름', '역할', '학위종류', '학번', '입학학기', '생년월일', '연구자번호', '연락처', '계좌번호', '주민등록번호', 'BK', '직장가입자', '활성', '이메일', '비고'];
+    const head = ['이름', '역할', '학위종류', '학번', '입학학기', '생년월일', '연구자번호', '연락처', '계좌번호', '주민등록번호', 'BK', '직장', '활성', '이메일', '비고'];
     const body = rows.map((m) => [m.name, roleLabel(m.role), m.degree, m.student_no, m.admission_term, m.birth_date, m.researcher_no, m.phone, m.bank_account, m.rrn, m.is_bk ? 'Y' : '', m.is_employed ? 'Y' : '', m.active ? 'Y' : 'N', m.email, m.note]);
     downloadCsv('구성원.csv', [head, ...body]);
   };
@@ -106,7 +106,7 @@ export function MembersPage({ me }) {
       <table class="grid members center">
         <thead><tr>
           <th class="sticky">이름</th><th>학위종류</th><th>학번</th><th>입학학기</th><th>생년월일</th><th>연구자번호</th>
-          <th>연락처</th><th>계좌번호</th><th>주민등록번호</th><th>BK</th><th>직장가입자</th><th>역할</th><th>활성</th><th>비고</th><th></th>
+          <th>연락처</th><th>계좌번호</th><th>주민등록번호</th><th>BK</th><th>직장</th><th>역할</th><th>활성</th><th>비고</th><th></th>
         </tr></thead>
         <tbody>
           ${rows.map((m) => html`<tr key=${m.id} class=${cls(!m.active && 'inactive', m.id === me.id && 'me')} onDblClick=${() => setEditing(m)}>
@@ -204,7 +204,7 @@ export function MemberForm({ initial, me, onClose, onSaved }) {
         <label>계좌번호<input class="text sensitive" value=${f.bank_account} onInput=${set('bank_account')} placeholder="은행명 000-0000-0000" autocomplete="off" /></label>
         <label>주민등록번호<input class="text sensitive" value=${f.rrn} onInput=${set('rrn')} onBlur=${onRrnBlur} placeholder="000000-0000000 (앞 7자리만도 가능)" inputMode="numeric" autocomplete="off" /></label>
         <label class="check"><input type="checkbox" checked=${f.is_bk} onChange=${set('is_bk')} /> BK 참여</label>
-        <label class="check"><input type="checkbox" checked=${f.is_employed} onChange=${set('is_employed')} /> 직장가입자</label>
+        <label class="check"><input type="checkbox" checked=${f.is_employed} onChange=${set('is_employed')} /> 직장 (직장가입자)</label>
         <label>역할
           <select class="select" value=${f.role} onChange=${set('role')} disabled=${isSelf}>
             ${ROLES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}
