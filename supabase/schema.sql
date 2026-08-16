@@ -23,7 +23,14 @@ create table if not exists public.members (
   name        text not null,
   email       text unique,                       -- 로그인 이메일. 비어 있으면 로그인 불가
   role        public.member_role not null default 'student',
-  position    text,                              -- 학사/석사/박사/연구원 등
+  degree         text check (degree is null or degree in ('학사','석사','박사','석박통합')),  -- 학위종류
+  student_no     text,                           -- 학번
+  admission_term text,                           -- 입학학기 (예: 2026-1)
+  birth_date     date,                           -- 생년월일
+  researcher_no  text,                           -- 연구자번호
+  phone          text,                           -- 연락처
+  bank_account   text,                           -- 계좌번호 (은행 포함)  ※ 민감정보
+  rrn            text,                           -- 주민등록번호         ※ 민감정보
   is_bk       boolean not null default false,
   active      boolean not null default true,
   note        text,
@@ -32,6 +39,7 @@ create table if not exists public.members (
   updated_at  timestamptz not null default now()
 );
 create index if not exists members_email_lower_idx on public.members (lower(email));
+create unique index if not exists members_student_no_idx on public.members (student_no) where student_no is not null and student_no <> '';
 
 -- 과제
 create table if not exists public.projects (
@@ -370,6 +378,6 @@ on conflict (name) do nothing;
 -- ---------------------------------------------------------------------
 -- 8. 첫 관리자 등록 (필요 시 이메일 수정 후 실행)
 -- ---------------------------------------------------------------------
-insert into public.members (name, email, role, position, sort_order)
-values ('김상현', 'kim87@khu.ac.kr', 'pi', '교수', -100)
+insert into public.members (name, email, role, sort_order)
+values ('김상현', 'kim87@khu.ac.kr', 'pi', -100)
 on conflict (email) do update set role = 'pi', active = true;

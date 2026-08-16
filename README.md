@@ -4,8 +4,8 @@
 정적 파일(GitHub Pages) + Supabase(Postgres/Auth/RLS) 구조로, 빌드 도구 없이 이 저장소의 파일이 그대로 배포됩니다.
 
 - 주소: https://rcilab.github.io/manage/
-- **학생**: 로그인하면 자기 인건비가 어떤 과제에서 얼마씩 나오는지(월별·과제별)만 볼 수 있음
-- **교수(pi) / 행정조교(admin)**: 대시보드, 과제별 예산·집행 원장, 학생 인건비 배분, 구성원 관리 전부 편집
+- **교수(pi) / 행정조교(admin)** 두 역할이 사용: 대시보드, 과제별 예산·집행 원장, 학생 인건비 배분, 구성원(인사정보) 관리
+- (학생 로그인은 현재 쓰지 않음. 학생 계정을 만들면 자기 인건비만 보는 `#/me` 화면이 열림)
 
 데이터는 이 저장소에 없습니다. 모두 Supabase DB에 있고, 로그인한 사용자의 역할에 따라 DB(RLS)가 접근을 제한합니다.
 
@@ -44,6 +44,10 @@
 
 (선택) Google 로그인도 지원합니다. Supabase Providers 에서 Google 을 켜면 로그인 화면에 버튼이 자동으로 나타납니다 — Google Cloud Console 의 OAuth 클라이언트(리디렉션 URI `https://<ref>.supabase.co/auth/v1/callback`)가 필요합니다.
 
+### 1-2b. 스키마 변경분 적용 (기존 프로젝트)
+처음 `schema.sql` 을 실행한 뒤 추가된 변경은 `supabase/migrations/` 에 번호순으로 있습니다. 새 파일이 생기면 SQL Editor 에서 순서대로 실행하세요.
+- `002_member_details.sql` — 구성원 인사정보 컬럼 (학위종류·학번·입학학기·생년월일·연구자번호·연락처·계좌번호·주민등록번호). 새로 만드는 프로젝트는 `schema.sql` 에 이미 포함.
+
 ### 1-3. 초기 데이터 넣기 (구글 시트 → DB)
 ```bash
 pip install openpyxl
@@ -73,7 +77,7 @@ python scripts/import_xlsx.py "연구비 소요 내역 (2026).xlsx" --year 2026 
 | `#/projects` | 관리자 | 과제 목록/추가, 연차 추가 → 연차 클릭 |
 | `#/projects/<연차id>` | 관리자 | 연차 정보(기간·계획), 비목별 예산(계획/이월 편집, 사용/잔액 자동), 집행 원장 입력·수정·삭제 |
 | `#/allocations` | 관리자 | 학생 인건비 배분 그리드 (과제별 / 학생별 / 요약, CSV) + 학생별 월 기준 금액 |
-| `#/members` | 관리자 | 구성원 이름·이메일·역할·신분·BK·활성 |
+| `#/members` | 관리자 | 구성원 인사정보: 학위종류·학번·입학학기·생년월일·연구자번호·연락처·계좌번호·주민등록번호·BK·역할·활성 (+ 추가/수정 모달, 민감정보 가림, CSV) |
 
 ### 집계 규칙
 - 각 연차의 **기간(period_start ~ period_end)** 안의 달에 배분된 학생 인건비 합계가 그 연차의 `학생인건비` 사용액으로 자동 집계됩니다. 기간이 비어 있으면 집계되지 않습니다.
@@ -94,7 +98,8 @@ app/
   util.js             포맷/라우터/훅
   main.js             앱 루트, 라우팅, 로그인 상태
   pages/              login, student, dashboard, projects, project_year, allocations, members
-supabase/schema.sql   테이블, 뷰, RLS, 가입 제한 트리거, 기본 비목
+supabase/schema.sql   테이블, 뷰, RLS, 가입 제한 트리거, 기본 비목 (신규 프로젝트용 전체)
+supabase/migrations/  기존 프로젝트에 순서대로 적용할 변경분
 scripts/import_xlsx.py  구글 시트(xlsx) → seed.sql
 scripts/create_users.py 구성원 로그인 계정 생성 / 비밀번호 초기화 (service_role 키 필요, 로컬 전용)
 test/smoke.mjs        헤드리스 스모크 테스트 (happy-dom + 가짜 supabase)
@@ -126,5 +131,6 @@ node test/smoke.mjs
 - 관리자를 추가하려면 구성원 화면에서 역할을 `행정조교` 또는 `교수` 로 바꾸면 됩니다.
 
 ## 5. 주의
+- **주민등록번호·계좌번호는 민감정보**입니다. RLS 로 관리자만 읽을 수 있고 화면에서는 기본으로 가려지지만, DB 자체에는 평문으로 저장됩니다. 필요하면 Supabase Vault 로 컬럼 암호화를 추가하세요. CSV 로 내려받은 파일은 반드시 안전하게 보관/삭제하세요.
 - Supabase 무료 플랜은 1주일간 요청이 없으면 프로젝트가 일시정지됩니다(대시보드에서 재개 가능). 매달 쓰는 앱이라면 Pro 로 올리거나 주 1회 접속하세요.
 - 급여·개인정보가 들어 있으므로 `local/`, xlsx, seed.sql 을 커밋하지 마세요.

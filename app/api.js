@@ -52,6 +52,9 @@ export async function saveMember(row) {
   delete payload.id;
   return unwrap(await supabase.from('members').insert(payload).select().single());
 }
+export async function deleteMember(id) {
+  unwrap(await supabase.from('members').delete().eq('id', id));
+}
 
 // ---------- 과제 ----------
 export async function listProjects({ includeInactive = true } = {}) {

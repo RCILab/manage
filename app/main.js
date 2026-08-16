@@ -20,7 +20,6 @@ const MANAGER_LINKS = [
   ['/projects', '과제·집행'],
   ['/allocations', '인건비 배분'],
   ['/members', '구성원'],
-  ['/me', '내 인건비'],
   ['/account', '내 계정'],
 ];
 const STUDENT_LINKS = [['/me', '내 인건비'], ['/account', '내 계정']];

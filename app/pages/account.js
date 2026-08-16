@@ -28,7 +28,7 @@ export function AccountPage({ me, session }) {
         <label>이름 <span>${me?.name || '–'}</span></label>
         <label>이메일 <span>${session?.user?.email || '–'}</span></label>
         <label>역할 <span>${me?.role === 'pi' ? '교수' : me?.role === 'admin' ? '행정조교' : '학생'}</span></label>
-        <label>신분 <span>${me?.position || '–'}${me?.is_bk ? ' · BK' : ''}</span></label>
+        <label>학위 <span>${me?.degree || '–'}${me?.is_bk ? ' · BK' : ''}</span></label>
       </div>
     </div>
     <h2>비밀번호 변경</h2>

@@ -35,7 +35,7 @@ export function StudentPage({ me }) {
 
   return html`<div class="page">
     <div class="page-head">
-      <h1>내 인건비 <span class="muted">${me.name}${me.position ? ` · ${me.position}` : ''}${me.is_bk ? ' · BK' : ''}</span></h1>
+      <h1>내 인건비 <span class="muted">${me.name}${me.degree ? ` · ${me.degree}` : ''}${me.is_bk ? ' · BK' : ''}</span></h1>
       <${YearSelect} year=${year} years=${years.data || []} onChange=${setYear} />
     </div>
     <${ErrorBox} error=${data.error} onRetry=${data.reload} />

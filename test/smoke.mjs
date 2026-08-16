@@ -33,9 +33,9 @@ const project_years = [
 ];
 const db = {
   members: [
-    { id: ids.pi, name: '김상현', email: 'kim87@khu.ac.kr', role: 'pi', position: '교수', is_bk: false, active: true, note: null, sort_order: -100 },
-    { id: ids.stu, name: '박수환', email: 'psh@khu.ac.kr', role: 'student', position: '박사', is_bk: true, active: true, note: null, sort_order: 1 },
-    { id: ids.stu2, name: '강민형', email: null, role: 'student', position: null, is_bk: true, active: true, note: null, sort_order: 2 },
+    { id: ids.pi, name: '김상현', email: 'kim87@khu.ac.kr', role: 'pi', degree: null, is_bk: false, active: true, note: null, sort_order: -100 },
+    { id: ids.stu, name: '박수환', email: 'psh@khu.ac.kr', role: 'student', degree: '박사', student_no: '2020123456', rrn: '950101-1234567', bank_account: '국민 123456-01-123456', is_bk: true, active: true, note: null, sort_order: 1 },
+    { id: ids.stu2, name: '강민형', email: null, role: 'student', degree: null, is_bk: true, active: true, note: null, sort_order: 2 },
   ],
   projects,
   project_years,
@@ -268,19 +268,60 @@ console.log('AllocationsPage');
   await unmount(root);
 }
 
-// 구성원
+// 구성원 (인사정보 표 + 추가/수정 모달)
 console.log('MembersPage');
 {
+  const mm = await import('../app/pages/members.js');
+  ok(mm.normalizeRrn('9501011234567') === '950101-1234567', 'RRN 정규화');
+  ok(mm.birthFromRrn('950101-1234567') === '1995-01-01' && mm.birthFromRrn('050101-3234567') === '2005-01-01', 'RRN→생년월일');
+  ok(mm.normalizePhone('01012345678') === '010-1234-5678', '전화번호 정규화');
+  ok(mm.maskRrn('950101-1234567') === '950101-1●●●●●●', 'RRN 마스킹');
+  ok(mm.maskAccount('국민 123456-01-123456').endsWith('3456') && mm.maskAccount('국민 123456-01-123456').includes('●'), '계좌 마스킹');
+
   const root = mount(html`<${MembersPage} me=${me} />`);
   await settle();
-  const t = text(root);
-  const names = [...root.querySelectorAll('table.members input.text[type=text]')].map((i) => i.value);
-  ok(names.includes('박수환') && names.includes('강민형'), '구성원 목록');
-  ok(t.includes('이메일이 비어 있는'), '이메일 누락 안내');
-  const emailInputs = [...root.querySelectorAll('input[type=email]')];
-  const target = emailInputs.find((i) => !i.value);
-  target.dispatchEvent(new win.Event('focus'));
-  target.value = 'KMH@khu.ac.kr'; target.dispatchEvent(new win.Event('input')); target.dispatchEvent(new win.Event('blur'));
+  let t = text(root);
+  ok(t.includes('박수환') && t.includes('강민형') && t.includes('2020123456'), '구성원 표 (이름/학번)');
+  ok(t.includes('950101-1●●●●●●') && !t.includes('950101-1234567'), '주민번호 기본 가림');
+  // 민감정보 표시 토글
+  const reveal = [...root.querySelectorAll('.page-head input[type=checkbox]')][1];
+  reveal.checked = true; reveal.dispatchEvent(new win.Event('change'));
+  await settle();
+  ok(text(root).includes('950101-1234567'), '민감정보 표시 켜면 보임');
+  // 추가 모달
+  root.querySelector('button.btn.primary').click();
+  await settle();
+  const modal = root.querySelector('.modal');
+  ok(modal && modal.textContent.includes('구성원 추가'), '추가 모달 열림');
+  const setVal = (sel, v) => { const el = modal.querySelector(sel); el.value = v; el.dispatchEvent(new win.Event(el.tagName === 'SELECT' ? 'change' : 'input')); };
+  const labels = [...modal.querySelectorAll('label')];
+  const inputOf = (labelText) => labels.find((l) => l.textContent.trim().startsWith(labelText)).querySelector('input,select');
+  inputOf('이름').value = '홍길동'; inputOf('이름').dispatchEvent(new win.Event('input'));
+  inputOf('학위종류').value = '석사'; inputOf('학위종류').dispatchEvent(new win.Event('change'));
+  inputOf('학번').value = '2026999999'; inputOf('학번').dispatchEvent(new win.Event('input'));
+  inputOf('입학학기').value = '2026-1'; inputOf('입학학기').dispatchEvent(new win.Event('input'));
+  inputOf('연구자번호').value = '12345678'; inputOf('연구자번호').dispatchEvent(new win.Event('input'));
+  inputOf('연락처').value = '01099998888'; inputOf('연락처').dispatchEvent(new win.Event('input'));
+  inputOf('계좌번호').value = '신한 110-123-456789'; inputOf('계좌번호').dispatchEvent(new win.Event('input'));
+  const rrnIn = inputOf('주민등록번호'); rrnIn.value = '0003013456789'; rrnIn.dispatchEvent(new win.Event('input')); rrnIn.dispatchEvent(new win.Event('blur'));
+  await wait(10);
+  ok(inputOf('생년월일').value === '2000-03-01', '주민번호로 생년월일 자동 입력');
+  modal.querySelector('form').dispatchEvent(new win.Event('submit'));
+  await settle();
+  const ins = calls.find((c) => c.table === 'members' && c.mode === 'insert');
+  ok(ins && ins.payload.name === '홍길동' && ins.payload.degree === '석사' && ins.payload.student_no === '2026999999'
+     && ins.payload.admission_term === '2026-1' && ins.payload.researcher_no === '12345678' && ins.payload.phone === '010-9999-8888'
+     && ins.payload.rrn === '000301-3456789' && ins.payload.birth_date === '2000-03-01' && ins.payload.bank_account === '신한 110-123-456789', '구성원 insert 페이로드');
+  ok(!root.querySelector('.modal') && text(root).includes('홍길동'), '모달 닫히고 목록 갱신');
+  // 수정 모달: 이메일 저장 (소문자 정규화)
+  const row = [...root.querySelectorAll('table.members tbody tr')].find((r) => r.textContent.startsWith('강민형'));
+  row.querySelector('button').click();
+  await settle();
+  const m2 = root.querySelector('.modal');
+  const emailIn = [...m2.querySelectorAll('label')].find((l) => l.textContent.includes('로그인 이메일')).querySelector('input');
+  emailIn.value = 'KMH@khu.ac.kr'; emailIn.dispatchEvent(new win.Event('input'));
+  await wait(10);
+  m2.querySelector('form').dispatchEvent(new win.Event('submit'));
   await settle();
   const up = calls.find((c) => c.table === 'members' && c.mode === 'update' && c.payload.email);
   ok(up && up.payload.email === 'kmh@khu.ac.kr', '이메일 저장 (소문자 정규화)');

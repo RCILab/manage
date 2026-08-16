@@ -203,19 +203,18 @@ def parse_notes(wb):
     return notes
 
 
-def position_from_note(note, is_bk):
+def degree_from_note(note):
+    """균등차등 탭 비고 → 학위종류 (학사/석사/박사/석박통합)"""
     if not note:
         return None
     if '학부' in note:
-        return '학부연구생'
-    if '박사' in note:
-        return '박사'
+        return '학사'
     if '석박' in note:
         return '석박통합'
+    if '박사' in note:
+        return '박사'
     if '석사' in note:
         return '석사'
-    if '직장' in note:
-        return '연구원'
     return None
 
 
@@ -476,11 +475,11 @@ def main():
     w('\n-- 구성원 (이메일은 관리자 화면에서 입력)')
     for m in members:
         note = notes.get(m['name'])
-        pos = position_from_note(note, m['is_bk'])
-        w(f"insert into public.members (name, role, position, is_bk, note, sort_order) "
-          f"select {q(m['name'])}, 'student', {q(pos)}, {'true' if m['is_bk'] else 'false'}, {q(note)}, {m['sort_order']} "
+        deg = degree_from_note(note)
+        w(f"insert into public.members (name, role, degree, is_bk, note, sort_order) "
+          f"select {q(m['name'])}, 'student', {q(deg)}, {'true' if m['is_bk'] else 'false'}, {q(note)}, {m['sort_order']} "
           f"where not exists (select 1 from public.members where name = {q(m['name'])});")
-    w("insert into public.members (name, role, position, sort_order) select '행정조교', 'admin', '행정', -50 "
+    w("insert into public.members (name, role, sort_order) select '행정조교', 'admin', -50 "
       "where not exists (select 1 from public.members where role = 'admin');")
 
     # ---- allocations

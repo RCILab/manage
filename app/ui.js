@@ -123,3 +123,18 @@ export function Empty({ text = '데이터가 없습니다.' }) {
 export function Confirm(message) {
   return window.confirm(message);
 }
+
+/** 간단한 모달. Esc / 배경 클릭으로 닫힘 */
+export function Modal({ title, onClose, children, wide }) {
+  useEffect(() => {
+    const f = (e) => { if (e.key === 'Escape') onClose(); };
+    addEventListener('keydown', f);
+    return () => removeEventListener('keydown', f);
+  }, [onClose]);
+  return html`<div class="modal-backdrop" onMouseDown=${(e) => { if (e.target === e.currentTarget) onClose(); }}>
+    <div class=${cls('modal', wide && 'wide')} role="dialog" aria-modal="true">
+      <div class="modal-head"><h2>${title}</h2><button type="button" class="btn ghost small" onClick=${onClose} aria-label="닫기">✕</button></div>
+      <div class="modal-body">${children}</div>
+    </div>
+  </div>`;
+}

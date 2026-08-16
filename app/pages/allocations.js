@@ -137,7 +137,7 @@ function ByMember({ year, members, memberId, setMemberId, projects, cells, setCe
   const targetTotal = sum(MONTHS, (mo) => tg.get(`${memberId}:${mo}`) || 0);
   return html`
     <div class="toolbar">
-      <${Select} value=${memberId} onChange=${setMemberId} options=${members.map((x) => ({ value: x.id, label: x.name + (x.position ? ' · ' + x.position : '') + (x.is_bk ? ' · BK' : '') }))} />
+      <${Select} value=${memberId} onChange=${setMemberId} options=${members.map((x) => ({ value: x.id, label: x.name + (x.degree ? ' · ' + x.degree : '') + (x.is_bk ? ' · BK' : '') }))} />
       <label class="inline small"><input type="checkbox" checked=${showAll} onChange=${(e) => setShowAll(e.target.checked)} /> 모든 과제 표시</label>
       ${m && html`<span class="muted">${year}년 합계 <b>${fmtWon(grand)}</b>${targetTotal ? html` · 기준 ${fmtWon(targetTotal)} · 차이 <b class=${cls(grand - targetTotal < 0 && 'neg')}>${fmtWon(grand - targetTotal)}</b>` : ''}</span>`}
     </div>

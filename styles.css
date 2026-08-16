@@ -159,3 +159,19 @@ table.grid select.select:hover, table.grid select.select:focus { border-color: v
 .login-form input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-bg); }
 .panel.stack { display: flex; flex-direction: column; gap: .5rem; max-width: 420px; }
 .panel.stack input.text { width: 100%; }
+
+/* ---------- 모달 ---------- */
+.modal-backdrop { position: fixed; inset: 0; background: rgba(20, 24, 32, .45); display: flex; align-items: flex-start; justify-content: center; padding: 4vh 1rem; z-index: 50; overflow-y: auto; }
+.modal { background: var(--panel); border-radius: 10px; box-shadow: 0 12px 40px rgba(0,0,0,.25); width: 100%; max-width: 560px; }
+.modal.wide { max-width: 860px; }
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); }
+.modal-head h2 { margin: 0; font-size: 1.05rem; }
+.modal-body { padding: 1rem 1.1rem 1.2rem; }
+.form-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .6rem .9rem; }
+.form-grid label { display: flex; flex-direction: column; gap: .2rem; font-size: .8rem; color: var(--muted); }
+.form-grid label input.text, .form-grid label select.select { width: 100%; font-size: .95rem; color: var(--text); }
+.form-grid label.wide { grid-column: 1 / -1; }
+.form-grid label.check { flex-direction: row; align-items: center; gap: .4rem; font-size: .9rem; color: var(--text); padding-top: 1.2rem; }
+.form-actions { display: flex; gap: .5rem; align-items: center; margin-top: 1rem; }
+.sensitive { font-family: var(--mono); letter-spacing: .02em; }
+table.members td { max-width: 14rem; overflow: hidden; text-overflow: ellipsis; }
