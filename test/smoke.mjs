@@ -272,7 +272,7 @@ console.log('AllocationsPage');
 console.log('MembersPage');
 {
   const mm = await import('../app/pages/members.js');
-  ok(mm.normalizeRrn('9501011234567') === '950101-1234567', 'RRN 정규화');
+  ok(mm.normalizeRrn('9501011234567') === '950101-1234567' && mm.normalizeRrn('9906051') === '990605-1' && mm.isValidRrn('990605-1'), 'RRN 정규화 (전체/앞7자리)');
   ok(mm.birthFromRrn('950101-1234567') === '1995-01-01' && mm.birthFromRrn('050101-3234567') === '2005-01-01', 'RRN→생년월일');
   ok(mm.normalizePhone('01012345678') === '010-1234-5678', '전화번호 정규화');
   ok(mm.maskRrn('950101-1234567') === '950101-1●●●●●●', 'RRN 마스킹');
@@ -285,7 +285,8 @@ console.log('MembersPage');
   const order = [...root.querySelectorAll('table.members tbody tr th.sticky')].map((th) => th.textContent);
   ok(order.join(',') === '김상현,박수환,강민형', '정렬: 교수 → 학생(박사과정 → 미입력)');
   ok(mm.memberSort({ role: 'student', degree: '석사과정', sort_order: 1, name: 'a' }, { role: 'student', degree: '석박통합과정', sort_order: 0, name: 'b' }) > 0
-     && mm.memberSort({ role: 'admin', name: 'x' }, { role: 'student', degree: '석박통합과정', name: 'y' }) < 0, 'memberSort 규칙');
+     && mm.memberSort({ role: 'admin', name: 'x' }, { role: 'student', degree: '석박통합과정', name: 'y' }) < 0
+     && mm.memberSort({ role: 'student', degree: '석박통합과정', active: false, name: 'x' }, { role: 'student', degree: '학사과정', active: true, name: 'y' }) > 0, 'memberSort 규칙 (비활성 뒤로)');
   ok(t.includes('950101-1234567') && t.includes('국민 123456-01-123456'), '주민번호·계좌 그대로 표시');
   // 추가 모달
   root.querySelector('button.btn.primary').click();

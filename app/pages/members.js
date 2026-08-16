@@ -6,10 +6,12 @@ import { Spinner, ErrorBox, Modal, Confirm } from '../ui.js';
 
 export const DEGREES = ['석박통합과정', '박사과정', '석사과정', '학사과정'];
 const ROLE_RANK = { pi: 0, admin: 1, student: 2 };
-/** 구성원 정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정, 정렬순서, 이름 */
+/** 구성원 정렬: 교수 → 행정조교 → 학생, (활성 먼저, 비활성은 뒤로), 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정, 정렬순서, 이름 */
 export function memberSort(a, b) {
   const r = (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9);
   if (r) return r;
+  const act = (a.active === false ? 1 : 0) - (b.active === false ? 1 : 0);   // 비활성은 뒤로
+  if (act) return act;
   const da = DEGREES.indexOf(a.degree), db = DEGREES.indexOf(b.degree);
   const d = (da < 0 ? 9 : da) - (db < 0 ? 9 : db);
   if (d) return d;
@@ -23,10 +25,11 @@ export function normalizeRrn(v) {
   const d = String(v || '').replace(/\D/g, '');
   if (!d) return null;
   if (d.length === 13) return `${d.slice(0, 6)}-${d.slice(6)}`;
+  if (d.length === 7) return `${d.slice(0, 6)}-${d.slice(6)}`;   // 앞 7자리만 (000000-0)
   return String(v).trim();
 }
 export function isValidRrn(v) {
-  return /^\d{6}-\d{7}$/.test(v || '');
+  return /^\d{6}-\d{7}$/.test(v || '') || /^\d{6}-\d$/.test(v || '');
 }
 export function normalizePhone(v) {
   const d = String(v || '').replace(/\D/g, '');
@@ -66,7 +69,7 @@ const EMPTY = { name: '', role: 'student', degree: '', student_no: '', admission
 
 export function MembersPage({ me }) {
   const q = useAsync(() => listMembers(), []);
-  const [showInactive, setShowInactive] = useState(false);
+  const [showInactive, setShowInactive] = useState(true);
   const [editing, setEditing] = useState(null);   // null | {} (새로) | member
   const [filter, setFilter] = useState('');
 
@@ -127,7 +130,7 @@ export function MembersPage({ me }) {
         </tbody>
       </table>
     </div>`}
-    <p class="muted small">정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정 (같으면 정렬 순서·이름). 행을 더블클릭하거나 "수정"을 눌러 편집합니다. 이 화면은 교수/행정조교만 볼 수 있습니다.</p>
+    <p class="muted small">정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정 (같으면 정렬 순서·이름), 비활성은 맨 뒤. 행을 더블클릭하거나 "수정"을 눌러 편집합니다. 이 화면은 교수/행정조교만 볼 수 있습니다.</p>
     ${editing && html`<${MemberForm} initial=${editing} me=${me} onClose=${() => setEditing(null)} onSaved=${() => { setEditing(null); q.reload(); }} />`}
   </div>`;
 }
@@ -155,7 +158,7 @@ export function MemberForm({ initial, me, onClose, onSaved }) {
     const name = (f.name || '').trim();
     if (!name) { setError('이름을 입력하세요.'); return; }
     const rrn = normalizeRrn(f.rrn);
-    if (rrn && !isValidRrn(rrn)) { setError('주민등록번호 형식이 올바르지 않습니다 (000000-0000000).'); return; }
+    if (rrn && !isValidRrn(rrn)) { setError('주민등록번호 형식이 올바르지 않습니다 (000000-0000000 또는 앞 7자리 000000-0).'); return; }
     if (isSelf && (f.role !== me.role || !f.active)) { setError('본인의 역할/활성 상태는 바꿀 수 없습니다.'); return; }
     const payload = {
       id: initial.id, name, role: f.role, degree: f.degree || null,
@@ -199,7 +202,7 @@ export function MemberForm({ initial, me, onClose, onSaved }) {
         <label>연구자번호<input class="text" value=${f.researcher_no} onInput=${set('researcher_no')} placeholder="NRF/KRI 연구자번호" /></label>
         <label>연락처<input class="text" value=${f.phone} onInput=${set('phone')} placeholder="010-0000-0000" inputMode="tel" /></label>
         <label>계좌번호<input class="text sensitive" value=${f.bank_account} onInput=${set('bank_account')} placeholder="은행명 000-0000-0000" autocomplete="off" /></label>
-        <label>주민등록번호<input class="text sensitive" value=${f.rrn} onInput=${set('rrn')} onBlur=${onRrnBlur} placeholder="000000-0000000" inputMode="numeric" autocomplete="off" /></label>
+        <label>주민등록번호<input class="text sensitive" value=${f.rrn} onInput=${set('rrn')} onBlur=${onRrnBlur} placeholder="000000-0000000 (앞 7자리만도 가능)" inputMode="numeric" autocomplete="off" /></label>
         <label class="check"><input type="checkbox" checked=${f.is_bk} onChange=${set('is_bk')} /> BK 참여</label>
         <label class="check"><input type="checkbox" checked=${f.is_employed} onChange=${set('is_employed')} /> 직장가입자</label>
         <label>역할
