@@ -296,6 +296,9 @@ console.log('MembersPage');
   ok(mm.memberSort({ role: 'student', degree: '석사과정', sort_order: 1, name: 'a' }, { role: 'student', degree: '석박통합과정', sort_order: 0, name: 'b' }) > 0
      && mm.memberSort({ role: 'admin', name: 'x' }, { role: 'student', degree: '석박통합과정', name: 'y' }) < 0
      && mm.memberSort({ role: 'student', degree: '석박통합과정', active: false, name: 'x' }, { role: 'student', degree: '학사과정', active: true, name: 'y' }) > 0, 'memberSort 규칙 (비활성 뒤로)');
+  ok(mm.memberSort({ role: 'student', degree: '석박통합과정', admission_term: '2099-1', active: true, name: 'a' }, { role: 'student', degree: '석사과정', admission_term: '2025-1', active: true, name: 'b' }) > 0
+     && mm.effectiveDegree({ degree: '석박통합과정', admission_term: '2099-1' }) === '학사과정'
+     && mm.effectiveDegree({ degree: '석박통합과정', admission_term: '2020-1' }) === '석박통합과정', '입학 예정자는 학사 그룹으로 정렬');
   ok(t.includes('950101-1234567') && t.includes('국민 123456-01-123456'), '주민번호·계좌 그대로 표시');
   // 추가 모달
   root.querySelector('button.btn.primary').click();

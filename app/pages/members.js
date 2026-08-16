@@ -12,7 +12,7 @@ export function memberSort(a, b) {
   if (r) return r;
   const act = (a.active === false ? 1 : 0) - (b.active === false ? 1 : 0);   // 비활성은 뒤로
   if (act) return act;
-  const da = DEGREES.indexOf(a.degree), db = DEGREES.indexOf(b.degree);
+  const da = DEGREES.indexOf(effectiveDegree(a)), db = DEGREES.indexOf(effectiveDegree(b));
   const d = (da < 0 ? 9 : da) - (db < 0 ? 9 : db);
   if (d) return d;
   return ((a.sort_order || 0) - (b.sort_order || 0)) || String(a.name).localeCompare(String(b.name), 'ko');
@@ -82,6 +82,15 @@ const termStr = (t) => `${t.y}년 ${t.s}학기`;
 export function addTerms(t, n) { const i = termIdx(t) + n; return { y: Math.floor(i / 2), s: (i % 2) + 1 }; }
 const DEGREE_SHORT = { '석박통합과정': '석박통합', '박사과정': '박사', '석사과정': '석사', '학사과정': '학부연구생' };
 const GRAD_TERMS = { '석사과정': 4, '박사과정': 4, '석박통합과정': 8 };   // 수료 학기 수 (졸업 예정 = 그 다음 학기)
+/** 아직 입학 전(입학학기가 미래)이면 true */
+export function isPending(m, now = new Date()) {
+  const adm = parseTerm(m.admission_term);
+  return !!adm && termIdx(currentTerm(now)) < termIdx(adm);
+}
+/** 정렬/표시용 현재 학위: 입학 전이면 아직 학사과정(학부생)으로 취급 */
+export function effectiveDegree(m, now = new Date()) {
+  return isPending(m, now) ? '학사과정' : m.degree;
+}
 /**
  * "2026년 1학기 기준 석사 3학기 (2025년 1학기부터, 2027년 1학기 졸업 예정)"
  * 입학학기가 없으면 '' 반환.
@@ -149,7 +158,7 @@ export function MembersPage({ me }) {
         <tbody>
           ${rows.map((m) => html`<tr key=${m.id} class=${cls(!m.active && 'inactive', m.id === me.id && 'me')} onDblClick=${() => setEditing(m)}>
             <th class="sticky">${m.name}</th>
-            <td>${m.degree || ''}</td>
+            <td>${m.degree || ''}${isPending(m) ? html` <span class="muted small">(예정)</span>` : ''}</td>
             <td class="mono">${m.student_no || ''}</td>
             <td>${m.admission_term || ''}</td>
             <td class="mono">${m.birth_date || ''}</td>
@@ -169,7 +178,7 @@ export function MembersPage({ me }) {
         </tbody>
       </table>
     </div>`}
-    <p class="muted small">정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정 (같으면 정렬 순서·이름), 비활성은 맨 뒤. '학기 현황'은 입학학기·학위와 오늘 날짜로 자동 계산됩니다 (3/1·9/1 지나면 자동 갱신; 석사·박사 4학기, 석박통합 8학기 수료 후 다음 학기 졸업 예정). 행을 더블클릭하거나 "수정"을 눌러 편집합니다. 이 화면은 교수/행정조교만 볼 수 있습니다.</p>
+    <p class="muted small">정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정 (같으면 정렬 순서·이름), 비활성은 맨 뒤, 아직 입학 전(입학 예정)인 사람은 학사과정 그룹에. '학기 현황'은 입학학기·학위와 오늘 날짜로 자동 계산됩니다 (3/1·9/1 지나면 자동 갱신; 석사·박사 4학기, 석박통합 8학기 수료 후 다음 학기 졸업 예정). 행을 더블클릭하거나 "수정"을 눌러 편집합니다. 이 화면은 교수/행정조교만 볼 수 있습니다.</p>
     ${editing && html`<${MemberForm} initial=${editing} me=${me} onClose=${() => setEditing(null)} onSaved=${() => { setEditing(null); q.reload(); }} />`}
   </div>`;
 }
