@@ -34,7 +34,13 @@ export function LoginPage() {
   const google = async () => {
     setBusy(true); setError(null);
     try { await signInWithGoogle(LOGIN_DOMAIN_HINT); }
-    catch (e) { setError(errMsg(e)); setBusy(false); }
+    catch (e) {
+      const m = errMsg(e);
+      setError(/provider is not enabled/i.test(m)
+        ? 'Google 로그인이 아직 Supabase에서 켜져 있지 않습니다. (Authentication → Providers → Google 을 켜고 Client ID/Secret 을 넣어야 합니다)'
+        : m);
+      setBusy(false);
+    }
   };
   const magic = async (e) => {
     e.preventDefault();
