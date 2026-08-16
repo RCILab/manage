@@ -38,9 +38,10 @@ export function StudentPage({ me }) {
       <h1>내 인건비 <span class="muted">${me.name}${me.degree ? ` · ${me.degree}` : ''}${me.is_bk ? ' · BK' : ''}</span></h1>
       <${YearSelect} year=${year} years=${years.data || []} onChange=${setYear} />
     </div>
+    ${(me.role === 'pi' || me.role === 'admin') && html`<div class="notice">이 화면은 본인에게 배분된 인건비만 보여줍니다. 관리 화면은 <a href="#/dashboard">대시보드</a> · <a href="#/allocations">인건비 배분</a> · <a href="#/members">구성원</a> 에 있습니다.</div>`}
     <${ErrorBox} error=${data.error} onRetry=${data.reload} />
     ${data.loading && html`<${Spinner} />`}
-    ${view && (view.projects.length === 0 ? html`<${Empty} text=${`${year}년 인건비 배분 내역이 없습니다.`} />` : html`
+    ${view && (view.projects.length === 0 ? html`<${Empty} text=${`${year}년 ${me.name} 님에게 배분된 인건비가 없습니다.`} />` : html`
       <div class="cards">
         <${Card} label=${`${year}년 배분 합계`} value=${fmtWon(view.total)} sub=${`과제 ${view.projects.length}개`} />
         <${Card} label="이번 달까지 누적" value=${fmtWon(view.paidSoFar)} />
