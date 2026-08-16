@@ -4,7 +4,17 @@ import { listMembers, saveMember, deleteMember } from '../api.js';
 import { useAsync, errMsg, toast, cls, downloadCsv } from '../util.js';
 import { Spinner, ErrorBox, Modal, Confirm } from '../ui.js';
 
-export const DEGREES = ['학사', '석사', '박사', '석박통합'];
+export const DEGREES = ['석박통합과정', '박사과정', '석사과정', '학사과정'];
+const ROLE_RANK = { pi: 0, admin: 1, student: 2 };
+/** 구성원 정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정, 정렬순서, 이름 */
+export function memberSort(a, b) {
+  const r = (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9);
+  if (r) return r;
+  const da = DEGREES.indexOf(a.degree), db = DEGREES.indexOf(b.degree);
+  const d = (da < 0 ? 9 : da) - (db < 0 ? 9 : db);
+  if (d) return d;
+  return ((a.sort_order || 0) - (b.sort_order || 0)) || String(a.name).localeCompare(String(b.name), 'ko');
+}
 const ROLES = [['student', '학생'], ['admin', '행정조교'], ['pi', '교수']];
 const roleLabel = (r) => (ROLES.find(([v]) => v === r) || [r, r])[1];
 
@@ -63,7 +73,8 @@ export function MembersPage({ me }) {
 
   const rows = useMemo(() => (q.data || [])
     .filter((m) => showInactive || m.active)
-    .filter((m) => !filter || [m.name, m.student_no, m.phone, m.email, m.researcher_no, m.note].some((x) => (x || '').includes(filter))),
+    .filter((m) => !filter || [m.name, m.student_no, m.phone, m.email, m.researcher_no, m.note].some((x) => (x || '').includes(filter)))
+    .sort(memberSort),
     [q.data, showInactive, filter]);
   const missingEmail = (q.data || []).filter((m) => m.active && (m.role === 'admin' || m.role === 'pi') && !m.email).length;
 
@@ -117,7 +128,7 @@ export function MembersPage({ me }) {
         </tbody>
       </table>
     </div>`}
-    <p class="muted small">행을 더블클릭하거나 "수정"을 눌러 편집합니다. 주민등록번호·계좌번호는 기본으로 가려져 있으며 교수/행정조교만 볼 수 있습니다.</p>
+    <p class="muted small">정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정 (같으면 정렬 순서·이름). 행을 더블클릭하거나 "수정"을 눌러 편집합니다. 주민등록번호·계좌번호는 기본으로 가려져 있으며 교수/행정조교만 볼 수 있습니다.</p>
     ${editing && html`<${MemberForm} initial=${editing} me=${me} onClose=${() => setEditing(null)} onSaved=${() => { setEditing(null); q.reload(); }} />`}
   </div>`;
 }

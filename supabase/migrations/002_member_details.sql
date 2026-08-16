@@ -21,8 +21,11 @@ do $$
 begin
   if exists (select 1 from information_schema.columns where table_schema = 'public' and table_name = 'members' and column_name = 'position') then
     update public.members set degree = case
-        when position in ('학사','석사','박사','석박통합') then position
-        when position = '학부연구생' then '학사'
+        when position = '학사' then '학사과정'
+        when position = '석사' then '석사과정'
+        when position = '박사' then '박사과정'
+        when position = '석박통합' then '석박통합과정'
+        when position = '학부연구생' then '학사과정'
         else degree end
       where degree is null;
     alter table public.members drop column position;
@@ -31,6 +34,6 @@ end $$;
 
 alter table public.members drop constraint if exists members_degree_check;
 alter table public.members add constraint members_degree_check
-  check (degree is null or degree in ('학사','석사','박사','석박통합'));
+  check (degree is null or degree in ('석박통합과정','박사과정','석사과정','학사과정'));
 
 create unique index if not exists members_student_no_idx on public.members (student_no) where student_no is not null and student_no <> '';

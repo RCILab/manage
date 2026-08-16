@@ -204,17 +204,17 @@ def parse_notes(wb):
 
 
 def degree_from_note(note):
-    """균등차등 탭 비고 → 학위종류 (학사/석사/박사/석박통합)"""
+    """균등차등 탭 비고 → 학위종류 (석박통합과정/박사과정/석사과정/학사과정)"""
     if not note:
         return None
     if '학부' in note:
-        return '학사'
+        return '학사과정'
     if '석박' in note:
-        return '석박통합'
+        return '석박통합과정'
     if '박사' in note:
-        return '박사'
+        return '박사과정'
     if '석사' in note:
-        return '석사'
+        return '석사과정'
     return None
 
 

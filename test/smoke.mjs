@@ -34,7 +34,7 @@ const project_years = [
 const db = {
   members: [
     { id: ids.pi, name: '김상현', email: 'kim87@khu.ac.kr', role: 'pi', degree: null, is_bk: false, active: true, note: null, sort_order: -100 },
-    { id: ids.stu, name: '박수환', email: 'psh@khu.ac.kr', role: 'student', degree: '박사', student_no: '2020123456', rrn: '950101-1234567', bank_account: '국민 123456-01-123456', is_bk: true, active: true, note: null, sort_order: 1 },
+    { id: ids.stu, name: '박수환', email: 'psh@khu.ac.kr', role: 'student', degree: '박사과정', student_no: '2020123456', rrn: '950101-1234567', bank_account: '국민 123456-01-123456', is_bk: true, active: true, note: null, sort_order: 1 },
     { id: ids.stu2, name: '강민형', email: null, role: 'student', degree: null, is_bk: true, active: true, note: null, sort_order: 2 },
   ],
   projects,
@@ -282,6 +282,10 @@ console.log('MembersPage');
   await settle();
   let t = text(root);
   ok(t.includes('박수환') && t.includes('강민형') && t.includes('2020123456'), '구성원 표 (이름/학번)');
+  const order = [...root.querySelectorAll('table.members tbody tr th.sticky')].map((th) => th.textContent);
+  ok(order.join(',') === '김상현,박수환,강민형', '정렬: 교수 → 학생(박사과정 → 미입력)');
+  ok(mm.memberSort({ role: 'student', degree: '석사과정', sort_order: 1, name: 'a' }, { role: 'student', degree: '석박통합과정', sort_order: 0, name: 'b' }) > 0
+     && mm.memberSort({ role: 'admin', name: 'x' }, { role: 'student', degree: '석박통합과정', name: 'y' }) < 0, 'memberSort 규칙');
   ok(t.includes('950101-1●●●●●●') && !t.includes('950101-1234567'), '주민번호 기본 가림');
   // 민감정보 표시 토글
   const reveal = [...root.querySelectorAll('.page-head input[type=checkbox]')][1];
@@ -297,7 +301,7 @@ console.log('MembersPage');
   const labels = [...modal.querySelectorAll('label')];
   const inputOf = (labelText) => labels.find((l) => l.textContent.trim().startsWith(labelText)).querySelector('input,select');
   inputOf('이름').value = '홍길동'; inputOf('이름').dispatchEvent(new win.Event('input'));
-  inputOf('학위종류').value = '석사'; inputOf('학위종류').dispatchEvent(new win.Event('change'));
+  inputOf('학위종류').value = '석사과정'; inputOf('학위종류').dispatchEvent(new win.Event('change'));
   inputOf('학번').value = '2026999999'; inputOf('학번').dispatchEvent(new win.Event('input'));
   inputOf('입학학기').value = '2026-1'; inputOf('입학학기').dispatchEvent(new win.Event('input'));
   inputOf('연구자번호').value = '12345678'; inputOf('연구자번호').dispatchEvent(new win.Event('input'));
@@ -309,7 +313,7 @@ console.log('MembersPage');
   modal.querySelector('form').dispatchEvent(new win.Event('submit'));
   await settle();
   const ins = calls.find((c) => c.table === 'members' && c.mode === 'insert');
-  ok(ins && ins.payload.name === '홍길동' && ins.payload.degree === '석사' && ins.payload.student_no === '2026999999'
+  ok(ins && ins.payload.name === '홍길동' && ins.payload.degree === '석사과정' && ins.payload.student_no === '2026999999'
      && ins.payload.admission_term === '2026-1' && ins.payload.researcher_no === '12345678' && ins.payload.phone === '010-9999-8888'
      && ins.payload.rrn === '000301-3456789' && ins.payload.birth_date === '2000-03-01' && ins.payload.bank_account === '신한 110-123-456789', '구성원 insert 페이로드');
   ok(!root.querySelector('.modal') && text(root).includes('홍길동'), '모달 닫히고 목록 갱신');

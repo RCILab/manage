@@ -23,7 +23,7 @@ create table if not exists public.members (
   name        text not null,
   email       text unique,                       -- 로그인 이메일. 비어 있으면 로그인 불가
   role        public.member_role not null default 'student',
-  degree         text check (degree is null or degree in ('학사','석사','박사','석박통합')),  -- 학위종류
+  degree         text check (degree is null or degree in ('석박통합과정','박사과정','석사과정','학사과정')),  -- 학위종류
   student_no     text,                           -- 학번
   admission_term text,                           -- 입학학기 (예: 2026-1)
   birth_date     date,                           -- 생년월일

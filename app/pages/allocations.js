@@ -3,6 +3,7 @@ import { useState, useMemo, useEffect } from 'preact/hooks';
 import { listMembers, listProjects, listAllocations, setAllocation, listTargets, setTarget, listAllocationYears } from '../api.js';
 import { useAsync, fmtWon, fmtNum, sum, thisYear, errMsg, toast, cls, downloadCsv } from '../util.js';
 import { Spinner, ErrorBox, MoneyCell, Select, YearSelect } from '../ui.js';
+import { memberSort } from './members.js';
 
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 const key = (m, p, mo) => `${m}:${p}:${mo}`;
@@ -32,7 +33,7 @@ export function AllocationsPage() {
     setTg(new Map(yq.data.targets.map((t) => [`${t.member_id}:${t.month}`, Number(t.amount)])));
   }, [yq.data]);
 
-  const members = useMemo(() => (base.data?.members || []).filter((m) => m.role === 'student' && (showInactive || m.active)), [base.data, showInactive]);
+  const members = useMemo(() => (base.data?.members || []).filter((m) => m.role === 'student' && (showInactive || m.active)).sort(memberSort), [base.data, showInactive]);
   const projects = useMemo(() => (base.data?.projects || []).filter((p) => showInactive || p.active), [base.data, showInactive]);
   const memberById = useMemo(() => new Map((base.data?.members || []).map((m) => [m.id, m])), [base.data]);
   const projectById = useMemo(() => new Map((base.data?.projects || []).map((p) => [p.id, p])), [base.data]);
