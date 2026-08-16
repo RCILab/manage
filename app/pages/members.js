@@ -62,7 +62,7 @@ export function maskAccount(v) {
   return s.replace(/\d/g, (c) => (seen++ < keep ? '●' : c));
 }
 
-const EMPTY = { name: '', role: 'student', degree: '', student_no: '', admission_term: '', birth_date: '', researcher_no: '', phone: '', bank_account: '', rrn: '', is_bk: false, email: '', active: true, note: '', sort_order: 0 };
+const EMPTY = { name: '', role: 'student', degree: '', student_no: '', admission_term: '', birth_date: '', researcher_no: '', phone: '', bank_account: '', rrn: '', is_bk: false, is_employed: false, email: '', active: true, note: '', sort_order: 0 };
 
 export function MembersPage({ me }) {
   const q = useAsync(() => listMembers(), []);
@@ -82,8 +82,8 @@ export function MembersPage({ me }) {
     setEditing({ ...EMPTY, sort_order: maxOrder + 1 });
   };
   const csv = () => {
-    const head = ['이름', '역할', '학위종류', '학번', '입학학기', '생년월일', '연구자번호', '연락처', '계좌번호', '주민등록번호', 'BK', '활성', '이메일', '비고'];
-    const body = rows.map((m) => [m.name, roleLabel(m.role), m.degree, m.student_no, m.admission_term, m.birth_date, m.researcher_no, m.phone, m.bank_account, m.rrn, m.is_bk ? 'Y' : '', m.active ? 'Y' : 'N', m.email, m.note]);
+    const head = ['이름', '역할', '학위종류', '학번', '입학학기', '생년월일', '연구자번호', '연락처', '계좌번호', '주민등록번호', 'BK', '직장가입자', '활성', '이메일', '비고'];
+    const body = rows.map((m) => [m.name, roleLabel(m.role), m.degree, m.student_no, m.admission_term, m.birth_date, m.researcher_no, m.phone, m.bank_account, m.rrn, m.is_bk ? 'Y' : '', m.is_employed ? 'Y' : '', m.active ? 'Y' : 'N', m.email, m.note]);
     downloadCsv('구성원.csv', [head, ...body]);
   };
 
@@ -103,7 +103,7 @@ export function MembersPage({ me }) {
       <table class="grid members center">
         <thead><tr>
           <th class="sticky">이름</th><th>학위종류</th><th>학번</th><th>입학학기</th><th>생년월일</th><th>연구자번호</th>
-          <th>연락처</th><th>계좌번호</th><th>주민등록번호</th><th>BK</th><th>역할</th><th>활성</th><th>비고</th><th></th>
+          <th>연락처</th><th>계좌번호</th><th>주민등록번호</th><th>BK</th><th>직장가입자</th><th>역할</th><th>활성</th><th>비고</th><th></th>
         </tr></thead>
         <tbody>
           ${rows.map((m) => html`<tr key=${m.id} class=${cls(!m.active && 'inactive', m.id === me.id && 'me')} onDblClick=${() => setEditing(m)}>
@@ -116,13 +116,14 @@ export function MembersPage({ me }) {
             <td class="mono">${m.phone || ''}</td>
             <td class="mono">${m.bank_account || ''}</td>
             <td class="mono">${m.rrn || ''}</td>
-            <td>${m.is_bk ? 'BK' : ''}</td>
+            <td>${m.is_bk ? '✓' : ''}</td>
+            <td>${m.is_employed ? '✓' : ''}</td>
             <td>${roleLabel(m.role)}</td>
             <td>${m.active ? '' : '비활성'}</td>
             <td class="muted small" title=${m.note || ''}>${m.note || ''}</td>
             <td><button class="btn tiny" onClick=${() => setEditing(m)}>수정</button></td>
           </tr>`)}
-          ${rows.length === 0 && html`<tr><td colspan="14" class="muted pad">구성원이 없습니다. 위의 "+ 추가" 를 누르세요.</td></tr>`}
+          ${rows.length === 0 && html`<tr><td colspan="15" class="muted pad">구성원이 없습니다. 위의 "+ 추가" 를 누르세요.</td></tr>`}
         </tbody>
       </table>
     </div>`}
@@ -163,7 +164,7 @@ export function MemberForm({ initial, me, onClose, onSaved }) {
       birth_date: f.birth_date || null,
       researcher_no: (f.researcher_no || '').trim() || null,
       phone: normalizePhone(f.phone), bank_account: (f.bank_account || '').trim() || null, rrn,
-      is_bk: !!f.is_bk, email: (f.email || '').trim() || null, active: !!f.active,
+      is_bk: !!f.is_bk, is_employed: !!f.is_employed, email: (f.email || '').trim() || null, active: !!f.active,
       note: (f.note || '').trim() || null, sort_order: Number(f.sort_order) || 0,
     };
     setBusy(true);
@@ -200,6 +201,7 @@ export function MemberForm({ initial, me, onClose, onSaved }) {
         <label>계좌번호<input class="text sensitive" value=${f.bank_account} onInput=${set('bank_account')} placeholder="은행명 000-0000-0000" autocomplete="off" /></label>
         <label>주민등록번호<input class="text sensitive" value=${f.rrn} onInput=${set('rrn')} onBlur=${onRrnBlur} placeholder="000000-0000000" inputMode="numeric" autocomplete="off" /></label>
         <label class="check"><input type="checkbox" checked=${f.is_bk} onChange=${set('is_bk')} /> BK 참여</label>
+        <label class="check"><input type="checkbox" checked=${f.is_employed} onChange=${set('is_employed')} /> 직장가입자</label>
         <label>역할
           <select class="select" value=${f.role} onChange=${set('role')} disabled=${isSelf}>
             ${ROLES.map(([v, l]) => html`<option value=${v}>${l}</option>`)}

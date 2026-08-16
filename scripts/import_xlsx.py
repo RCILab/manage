@@ -476,8 +476,9 @@ def main():
     for m in members:
         note = notes.get(m['name'])
         deg = degree_from_note(note)
-        w(f"insert into public.members (name, role, degree, is_bk, note, sort_order) "
-          f"select {q(m['name'])}, 'student', {q(deg)}, {'true' if m['is_bk'] else 'false'}, {q(note)}, {m['sort_order']} "
+        employed = bool(note and '직장' in note)
+        w(f"insert into public.members (name, role, degree, is_bk, is_employed, note, sort_order) "
+          f"select {q(m['name'])}, 'student', {q(deg)}, {'true' if m['is_bk'] else 'false'}, {'true' if employed else 'false'}, {q(note)}, {m['sort_order']} "
           f"where not exists (select 1 from public.members where name = {q(m['name'])});")
     w("insert into public.members (name, role, sort_order) select '행정조교', 'admin', -50 "
       "where not exists (select 1 from public.members where role = 'admin');")

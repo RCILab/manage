@@ -32,6 +32,7 @@ create table if not exists public.members (
   bank_account   text,                           -- 계좌번호 (은행 포함)  ※ 민감정보
   rrn            text,                           -- 주민등록번호         ※ 민감정보
   is_bk       boolean not null default false,
+  is_employed boolean not null default false,   -- 직장가입자
   active      boolean not null default true,
   note        text,
   sort_order  int not null default 0,

@@ -35,7 +35,7 @@ const db = {
   members: [
     { id: ids.pi, name: '김상현', email: 'kim87@khu.ac.kr', role: 'pi', degree: null, is_bk: false, active: true, note: null, sort_order: -100 },
     { id: ids.stu, name: '박수환', email: 'psh@khu.ac.kr', role: 'student', degree: '박사과정', student_no: '2020123456', rrn: '950101-1234567', bank_account: '국민 123456-01-123456', is_bk: true, active: true, note: null, sort_order: 1 },
-    { id: ids.stu2, name: '강민형', email: null, role: 'student', degree: null, is_bk: true, active: true, note: null, sort_order: 2 },
+    { id: ids.stu2, name: '강민형', email: null, role: 'student', degree: null, is_bk: true, is_employed: true, active: true, note: null, sort_order: 2 },
   ],
   projects,
   project_years,
@@ -293,6 +293,8 @@ console.log('MembersPage');
   const modal = root.querySelector('.modal');
   ok(modal && modal.textContent.includes('구성원 추가'), '추가 모달 열림');
   const setVal = (sel, v) => { const el = modal.querySelector(sel); el.value = v; el.dispatchEvent(new win.Event(el.tagName === 'SELECT' ? 'change' : 'input')); };
+  const empChk = [...modal.querySelectorAll('label.check')].find((l) => l.textContent.includes('직장가입자')).querySelector('input');
+  empChk.checked = true; empChk.dispatchEvent(new win.Event('change'));
   const labels = [...modal.querySelectorAll('label')];
   const inputOf = (labelText) => labels.find((l) => l.textContent.trim().startsWith(labelText)).querySelector('input,select');
   inputOf('이름').value = '홍길동'; inputOf('이름').dispatchEvent(new win.Event('input'));
@@ -310,7 +312,7 @@ console.log('MembersPage');
   const ins = calls.find((c) => c.table === 'members' && c.mode === 'insert');
   ok(ins && ins.payload.name === '홍길동' && ins.payload.degree === '석사과정' && ins.payload.student_no === '2026999999'
      && ins.payload.admission_term === '2026-1' && ins.payload.researcher_no === '12345678' && ins.payload.phone === '010-9999-8888'
-     && ins.payload.rrn === '000301-3456789' && ins.payload.birth_date === '2000-03-01' && ins.payload.bank_account === '신한 110-123-456789', '구성원 insert 페이로드');
+     && ins.payload.rrn === '000301-3456789' && ins.payload.birth_date === '2000-03-01' && ins.payload.bank_account === '신한 110-123-456789' && ins.payload.is_employed === true, '구성원 insert 페이로드 (직장가입자 포함)');
   ok(!root.querySelector('.modal') && text(root).includes('홍길동'), '모달 닫히고 목록 갱신');
   // 수정 모달: 이메일 저장 (소문자 정규화)
   const row = [...root.querySelectorAll('table.members tbody tr')].find((r) => r.textContent.startsWith('강민형'));
