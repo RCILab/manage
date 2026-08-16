@@ -29,7 +29,7 @@ function Nav({ me, session, path }) {
   return html`<header class="nav">
     <a class="brand" href="#/">${APP_TITLE}</a>
     <nav>
-      ${me && links.map(([p, label]) => html`<a href=${'#' + p} class=${cls(path.startsWith(p) && 'active')}>${label}</a>`)}
+      ${me && links.map(([p, label]) => html`<a href=${'#' + p} class=${cls((path === p || path.startsWith(p + '/')) && 'active')}>${label}</a>`)}
     </nav>
     <div class="spacer"></div>
     ${session && html`<span class="user" title=${session.user.email}>${me ? me.name : ''} <span class="muted">${session.user.email}</span></span>
@@ -58,7 +58,7 @@ function NotRegistered({ session }) {
   </div>`;
 }
 
-function App() {
+export function App() {
   const path = useHashRoute();
   const [session, setSession] = useState(undefined);   // undefined = 확인 중
   const [me, setMe] = useState(undefined);             // undefined = 확인 중, null = 명단에 없음
@@ -91,26 +91,29 @@ function App() {
     ${meError ? html`<div class="page narrow"><div class="error-box">구성원 조회 실패: ${errMsg(meError)}</div></div>` : html`<${NotRegistered} session=${session} />`}`;
 
   const isManager = me.role === 'admin' || me.role === 'pi';
+  const seg = path.split('/')[1] || '';           // '#/projects/abc' → 'projects'
+  const sub = path.split('/')[2] || '';
   let page;
-  if (path === '/' || path === '') {
+  if (seg === '') {
     navigate(isManager ? '/dashboard' : '/me');
     page = null;
-  } else if (path.startsWith('/me')) {
-    page = html`<${StudentPage} me=${me} />`;
-  } else if (path.startsWith('/account')) {
+  } else if (seg === 'account') {
     page = html`<${AccountPage} me=${me} session=${session} />`;
+  } else if (seg === 'me') {
+    if (isManager) { navigate('/dashboard'); page = null; }   // 관리자는 대시보드로
+    else page = html`<${StudentPage} me=${me} />`;
   } else if (!isManager) {
     navigate('/me');
     page = null;
-  } else if (path.startsWith('/dashboard')) {
+  } else if (seg === 'dashboard') {
     page = html`<${DashboardPage} me=${me} />`;
-  } else if (path.startsWith('/projects/')) {
-    page = html`<${ProjectYearPage} id=${path.split('/')[2]} me=${me} />`;
-  } else if (path.startsWith('/projects')) {
+  } else if (seg === 'projects' && sub) {
+    page = html`<${ProjectYearPage} id=${sub} me=${me} />`;
+  } else if (seg === 'projects') {
     page = html`<${ProjectsPage} me=${me} />`;
-  } else if (path.startsWith('/allocations')) {
+  } else if (seg === 'allocations') {
     page = html`<${AllocationsPage} me=${me} />`;
-  } else if (path.startsWith('/members')) {
+  } else if (seg === 'members') {
     page = html`<${MembersPage} me=${me} />`;
   } else {
     page = html`<div class="page">페이지를 찾을 수 없습니다. <a href="#/">홈으로</a></div>`;

@@ -372,5 +372,23 @@ console.log('main.js');
   else ok(app.textContent.includes('Supabase 설정이 없습니다'), '미설정 안내 화면');
 }
 
+// 라우팅: 관리자 세션으로 #/members → 구성원, #/me → 대시보드로 리다이렉트
+console.log('routing');
+{
+  fake.auth.getSession = async () => ({ data: { session: { user: { email: 'kim87@khu.ac.kr' } } }, error: null });
+  const app = document.createElement('div'); app.id = 'app2'; document.body.appendChild(app);
+  const { render: r2 } = await import('preact');
+  const mainMod = await import('../app/main.js');
+  // main.js 는 #app 에만 렌더하므로 App 을 직접 렌더
+  location.hash = '#/members';
+  r2(html`<${mainMod.App} />`, app);
+  await settle();
+  ok(app.textContent.includes('구성원') && app.querySelector('table.members'), '#/members → 구성원 화면');
+  location.hash = '#/me';
+  await settle();
+  ok(location.hash === '#/dashboard', '관리자 #/me → 대시보드 리다이렉트');
+  r2(null, app);
+}
+
 console.log(`\n모두 통과 (${pass} 검사)`);
 process.exit(0);
