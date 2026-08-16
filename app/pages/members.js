@@ -65,6 +65,44 @@ export function maskAccount(v) {
   return s.replace(/\d/g, (c) => (seen++ < keep ? '●' : c));
 }
 
+// ---------- 학기 현황 (입학학기 + 오늘 날짜로 자동 계산) ----------
+/** 오늘 기준 학기: 3/1~8/31 → 해당 연도 1학기, 9/1~12/31 → 2학기, 1/1~2/28 → 전년도 2학기 */
+export function currentTerm(now = new Date()) {
+  const y = now.getFullYear(), m = now.getMonth() + 1;
+  if (m >= 3 && m <= 8) return { y, s: 1 };
+  if (m >= 9) return { y, s: 2 };
+  return { y: y - 1, s: 2 };
+}
+export function parseTerm(t) {
+  const m = /^\s*(\d{4})\s*[-./년\s]\s*([12])/.exec(String(t || ''));
+  return m ? { y: Number(m[1]), s: Number(m[2]) } : null;
+}
+const termIdx = (t) => t.y * 2 + (t.s - 1);
+const termStr = (t) => `${t.y}년 ${t.s}학기`;
+export function addTerms(t, n) { const i = termIdx(t) + n; return { y: Math.floor(i / 2), s: (i % 2) + 1 }; }
+const DEGREE_SHORT = { '석박통합과정': '석박통합', '박사과정': '박사', '석사과정': '석사', '학사과정': '학부연구생' };
+const GRAD_TERMS = { '석사과정': 4, '박사과정': 4, '석박통합과정': 8 };   // 수료 학기 수 (졸업 예정 = 그 다음 학기)
+/**
+ * "2026년 1학기 기준 석사 3학기 (2025년 1학기부터, 2027년 1학기 졸업 예정)"
+ * 입학학기가 없으면 '' 반환.
+ */
+export function semesterStatus(m, now = new Date()) {
+  const adm = parseTerm(m.admission_term);
+  if (!adm) return '';
+  const cur = currentTerm(now);
+  const kind = DEGREE_SHORT[m.degree] || m.degree || '';
+  if (m.degree === '학사과정') return `학부연구생 (${termStr(adm)}부터)`;
+  const n = termIdx(cur) - termIdx(adm) + 1;
+  if (n <= 0) return `${kind} 입학 예정 (${termStr(adm)}부터)`;
+  let s = `${termStr(cur)} 기준 ${kind} ${n}학기 (${termStr(adm)}부터`;
+  const need = GRAD_TERMS[m.degree];
+  if (need) {
+    const grad = addTerms(adm, need);
+    s += termIdx(cur) >= termIdx(grad) ? `, ${termStr(grad)} 졸업 예정이었음` : `, ${termStr(grad)} 졸업 예정`;
+  }
+  return s + ')';
+}
+
 const EMPTY = { name: '', role: 'student', degree: '', student_no: '', admission_term: '', birth_date: '', researcher_no: '', phone: '', bank_account: '', rrn: '', is_bk: false, is_employed: false, email: '', active: true, note: '', sort_order: 0 };
 
 export function MembersPage({ me }) {
@@ -85,8 +123,8 @@ export function MembersPage({ me }) {
     setEditing({ ...EMPTY, sort_order: maxOrder + 1 });
   };
   const csv = () => {
-    const head = ['이름', '역할', '학위종류', '학번', '입학학기', '생년월일', '연구자번호', '연락처', '계좌번호', '주민등록번호', 'BK', '직장', '활성', '이메일', '비고'];
-    const body = rows.map((m) => [m.name, roleLabel(m.role), m.degree, m.student_no, m.admission_term, m.birth_date, m.researcher_no, m.phone, m.bank_account, m.rrn, m.is_bk ? 'Y' : '', m.is_employed ? 'Y' : '', m.active ? 'Y' : 'N', m.email, m.note]);
+    const head = ['이름', '역할', '학위종류', '학번', '입학학기', '생년월일', '연구자번호', '연락처', '계좌번호', '주민등록번호', 'BK', '직장', '활성', '학기 현황', '이메일', '비고'];
+    const body = rows.map((m) => [m.name, roleLabel(m.role), m.degree, m.student_no, m.admission_term, m.birth_date, m.researcher_no, m.phone, m.bank_account, m.rrn, m.is_bk ? 'Y' : '', m.is_employed ? 'Y' : '', m.active ? 'Y' : 'N', semesterStatus(m), m.email, m.note]);
     downloadCsv('구성원.csv', [head, ...body]);
   };
 
@@ -106,7 +144,7 @@ export function MembersPage({ me }) {
       <table class="grid members center">
         <thead><tr>
           <th class="sticky">이름</th><th>학위종류</th><th>학번</th><th>입학학기</th><th>생년월일</th><th>연구자번호</th>
-          <th>연락처</th><th>계좌번호</th><th>주민등록번호</th><th>BK</th><th>직장</th><th>역할</th><th>활성</th><th>비고</th><th></th>
+          <th>연락처</th><th>계좌번호</th><th>주민등록번호</th><th>BK</th><th>직장</th><th>역할</th><th>활성</th><th>학기 현황 (자동)</th><th>비고</th><th></th>
         </tr></thead>
         <tbody>
           ${rows.map((m) => html`<tr key=${m.id} class=${cls(!m.active && 'inactive', m.id === me.id && 'me')} onDblClick=${() => setEditing(m)}>
@@ -123,14 +161,15 @@ export function MembersPage({ me }) {
             <td>${m.is_employed ? '✓' : ''}</td>
             <td>${roleLabel(m.role)}</td>
             <td>${m.active ? '' : '비활성'}</td>
+            <td class="small" title="입학학기와 오늘 날짜로 자동 계산">${semesterStatus(m)}</td>
             <td class="muted small" title=${m.note || ''}>${m.note || ''}</td>
             <td><button class="btn tiny" onClick=${() => setEditing(m)}>수정</button></td>
           </tr>`)}
-          ${rows.length === 0 && html`<tr><td colspan="15" class="muted pad">구성원이 없습니다. 위의 "+ 추가" 를 누르세요.</td></tr>`}
+          ${rows.length === 0 && html`<tr><td colspan="16" class="muted pad">구성원이 없습니다. 위의 "+ 추가" 를 누르세요.</td></tr>`}
         </tbody>
       </table>
     </div>`}
-    <p class="muted small">정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정 (같으면 정렬 순서·이름), 비활성은 맨 뒤. 행을 더블클릭하거나 "수정"을 눌러 편집합니다. 이 화면은 교수/행정조교만 볼 수 있습니다.</p>
+    <p class="muted small">정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정 (같으면 정렬 순서·이름), 비활성은 맨 뒤. '학기 현황'은 입학학기·학위와 오늘 날짜로 자동 계산됩니다 (3/1·9/1 지나면 자동 갱신; 석사·박사 4학기, 석박통합 8학기 수료 후 다음 학기 졸업 예정). 행을 더블클릭하거나 "수정"을 눌러 편집합니다. 이 화면은 교수/행정조교만 볼 수 있습니다.</p>
     ${editing && html`<${MemberForm} initial=${editing} me=${me} onClose=${() => setEditing(null)} onSaved=${() => { setEditing(null); q.reload(); }} />`}
   </div>`;
 }
@@ -196,7 +235,7 @@ export function MemberForm({ initial, me, onClose, onSaved }) {
           </select>
         </label>
         <label>학번<input class="text" value=${f.student_no} onInput=${set('student_no')} placeholder="예: 2026123456" /></label>
-        <label>입학학기<input class="text" value=${f.admission_term} onInput=${set('admission_term')} placeholder="예: 2026-1" list="term-list" /></label>
+        <label>입학학기<input class="text" value=${f.admission_term} onInput=${set('admission_term')} placeholder="예: 2026-1 (학기 현황 자동 계산에 사용)" list="term-list" /></label>
         <datalist id="term-list">${termOptions().map((t) => html`<option value=${t} />`)}</datalist>
         <label>생년월일<input class="text" type="date" value=${f.birth_date} onInput=${set('birth_date')} /></label>
         <label>연구자번호<input class="text" value=${f.researcher_no} onInput=${set('researcher_no')} placeholder="NRF/KRI 연구자번호" /></label>

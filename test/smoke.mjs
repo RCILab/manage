@@ -275,6 +275,15 @@ console.log('MembersPage');
   ok(mm.normalizeRrn('9501011234567') === '950101-1234567' && mm.normalizeRrn('9906051') === '990605-1' && mm.isValidRrn('990605-1'), 'RRN 정규화 (전체/앞7자리)');
   ok(mm.birthFromRrn('950101-1234567') === '1995-01-01' && mm.birthFromRrn('050101-3234567') === '2005-01-01', 'RRN→생년월일');
   ok(mm.normalizePhone('01012345678') === '010-1234-5678', '전화번호 정규화');
+  const ms = { degree: '석사과정', admission_term: '2025-1' };
+  ok(mm.semesterStatus(ms, new Date(2026, 4, 1)) === '2026년 1학기 기준 석사 3학기 (2025년 1학기부터, 2027년 1학기 졸업 예정)', '학기 현황 (석사, 5월)');
+  ok(mm.semesterStatus(ms, new Date(2026, 8, 1)) === '2026년 2학기 기준 석사 4학기 (2025년 1학기부터, 2027년 1학기 졸업 예정)', '학기 현황 9/1 → 2학기');
+  ok(mm.semesterStatus(ms, new Date(2027, 0, 15)).startsWith('2026년 2학기 기준'), '1~2월은 전년도 2학기');
+  ok(mm.semesterStatus(ms, new Date(2027, 2, 1)) === '2027년 1학기 기준 석사 5학기 (2025년 1학기부터, 2027년 1학기 졸업 예정이었음)', '3/1 → 다음 학기, 졸업 예정 지남');
+  ok(mm.semesterStatus({ degree: '석박통합과정', admission_term: '2024-1' }, new Date(2026, 4, 1)) === '2026년 1학기 기준 석박통합 5학기 (2024년 1학기부터, 2028년 1학기 졸업 예정)', '석박통합 8학기');
+  ok(mm.semesterStatus({ degree: '학사과정', admission_term: '2026-2' }, new Date(2026, 4, 1)) === '학부연구생 (2026년 2학기부터)', '학부연구생');
+  ok(mm.semesterStatus({ degree: '석박통합과정', admission_term: '2026-2' }, new Date(2026, 4, 1)) === '석박통합 입학 예정 (2026년 2학기부터)', '입학 예정');
+  ok(mm.semesterStatus({ degree: '석사과정', admission_term: '' }) === '', '입학학기 없으면 빈칸');
   ok(mm.maskRrn('950101-1234567') === '950101-1●●●●●●', 'RRN 마스킹');
   ok(mm.maskAccount('국민 123456-01-123456').endsWith('3456') && mm.maskAccount('국민 123456-01-123456').includes('●'), '계좌 마스킹');
 
