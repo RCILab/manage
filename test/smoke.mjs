@@ -286,12 +286,7 @@ console.log('MembersPage');
   ok(order.join(',') === '김상현,박수환,강민형', '정렬: 교수 → 학생(박사과정 → 미입력)');
   ok(mm.memberSort({ role: 'student', degree: '석사과정', sort_order: 1, name: 'a' }, { role: 'student', degree: '석박통합과정', sort_order: 0, name: 'b' }) > 0
      && mm.memberSort({ role: 'admin', name: 'x' }, { role: 'student', degree: '석박통합과정', name: 'y' }) < 0, 'memberSort 규칙');
-  ok(t.includes('950101-1●●●●●●') && !t.includes('950101-1234567'), '주민번호 기본 가림');
-  // 민감정보 표시 토글
-  const reveal = [...root.querySelectorAll('.page-head input[type=checkbox]')][1];
-  reveal.checked = true; reveal.dispatchEvent(new win.Event('change'));
-  await settle();
-  ok(text(root).includes('950101-1234567'), '민감정보 표시 켜면 보임');
+  ok(t.includes('950101-1234567') && t.includes('국민 123456-01-123456'), '주민번호·계좌 그대로 표시');
   // 추가 모달
   root.querySelector('button.btn.primary').click();
   await settle();

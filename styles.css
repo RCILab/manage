@@ -175,3 +175,7 @@ table.grid select.select:hover, table.grid select.select:focus { border-color: v
 .form-actions { display: flex; gap: .5rem; align-items: center; margin-top: 1rem; }
 .sensitive { font-family: var(--mono); letter-spacing: .02em; }
 table.members td { max-width: 14rem; overflow: hidden; text-overflow: ellipsis; }
+
+/* 가운데 정렬 표 (구성원) */
+table.grid.center th, table.grid.center td { text-align: center; }
+table.grid.center tbody th.sticky { text-align: center; }

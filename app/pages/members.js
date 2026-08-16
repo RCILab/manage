@@ -67,7 +67,6 @@ const EMPTY = { name: '', role: 'student', degree: '', student_no: '', admission
 export function MembersPage({ me }) {
   const q = useAsync(() => listMembers(), []);
   const [showInactive, setShowInactive] = useState(false);
-  const [reveal, setReveal] = useState(false);
   const [editing, setEditing] = useState(null);   // null | {} (새로) | member
   const [filter, setFilter] = useState('');
 
@@ -94,15 +93,14 @@ export function MembersPage({ me }) {
       <button class="btn primary" onClick=${openNew}>+ 추가</button>
       <input class="text" placeholder="이름/학번/연락처 검색" value=${filter} onInput=${(e) => setFilter(e.target.value)} />
       <label class="inline small"><input type="checkbox" checked=${showInactive} onChange=${(e) => setShowInactive(e.target.checked)} /> 비활성 포함</label>
-      <label class="inline small"><input type="checkbox" checked=${reveal} onChange=${(e) => setReveal(e.target.checked)} /> 민감정보 표시</label>
       <div class="spacer"></div>
-      <button class="btn small" onClick=${csv} title="현재 표시된 목록을 CSV 로 (민감정보 포함)">CSV</button>
+      <button class="btn small" onClick=${csv} title="현재 표시된 목록을 CSV 로">CSV</button>
     </div>
     ${missingEmail > 0 && html`<div class="notice">로그인 이메일이 없는 관리자(교수/행정조교) ${missingEmail}명 — 이메일이 있어야 로그인할 수 있습니다.</div>`}
     <${ErrorBox} error=${q.error} onRetry=${q.reload} />
     ${q.loading && html`<${Spinner} />`}
     ${q.data && html`<div class="table-wrap">
-      <table class="grid members">
+      <table class="grid members center">
         <thead><tr>
           <th class="sticky">이름</th><th>학위종류</th><th>학번</th><th>입학학기</th><th>생년월일</th><th>연구자번호</th>
           <th>연락처</th><th>계좌번호</th><th>주민등록번호</th><th>BK</th><th>역할</th><th>활성</th><th>비고</th><th></th>
@@ -116,8 +114,8 @@ export function MembersPage({ me }) {
             <td class="mono">${m.birth_date || ''}</td>
             <td class="mono">${m.researcher_no || ''}</td>
             <td class="mono">${m.phone || ''}</td>
-            <td class="sensitive" title=${reveal ? '' : '민감정보 표시를 켜면 보입니다'}>${reveal ? (m.bank_account || '') : maskAccount(m.bank_account)}</td>
-            <td class="sensitive" title=${reveal ? '' : '민감정보 표시를 켜면 보입니다'}>${reveal ? (m.rrn || '') : maskRrn(m.rrn)}</td>
+            <td class="mono">${m.bank_account || ''}</td>
+            <td class="mono">${m.rrn || ''}</td>
             <td>${m.is_bk ? 'BK' : ''}</td>
             <td>${roleLabel(m.role)}</td>
             <td>${m.active ? '' : '비활성'}</td>
@@ -128,7 +126,7 @@ export function MembersPage({ me }) {
         </tbody>
       </table>
     </div>`}
-    <p class="muted small">정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정 (같으면 정렬 순서·이름). 행을 더블클릭하거나 "수정"을 눌러 편집합니다. 주민등록번호·계좌번호는 기본으로 가려져 있으며 교수/행정조교만 볼 수 있습니다.</p>
+    <p class="muted small">정렬: 교수 → 행정조교 → 학생, 학위 석박통합과정 → 박사과정 → 석사과정 → 학사과정 (같으면 정렬 순서·이름). 행을 더블클릭하거나 "수정"을 눌러 편집합니다. 이 화면은 교수/행정조교만 볼 수 있습니다.</p>
     ${editing && html`<${MemberForm} initial=${editing} me=${me} onClose=${() => setEditing(null)} onSaved=${() => { setEditing(null); q.reload(); }} />`}
   </div>`;
 }
